@@ -14,13 +14,14 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 public class SudokuBoard extends JPanel {
-	
+
 	private static final long serialVersionUID = 1L;
 	static int WIDTH = 9;
 	static int HEIGHT = 9;
 	static int GUESSES = 0;
 
 	private int[][] grid;
+	private int[][] copy;
 	private BoardPart input[];
 
 	public SudokuBoard() {
@@ -37,7 +38,15 @@ public class SudokuBoard extends JPanel {
 		button.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				solve();
+				readFromTextFeilds();
+				copy = null;
+				int re = solve(10);
+				if(re != 0){
+					grid = copy;
+				}
+				readFromGrid();
+				System.out.println(SudokuBoard.this.toString() + "Steps Used: " + GUESSES + "\nSolutions Found: " + re);
+				
 			}
 		});
 		add(button);
@@ -49,21 +58,26 @@ public class SudokuBoard extends JPanel {
 			}
 		});
 		add(button);
-		button = new JButton("Randomize");
+		button = new JButton("Remove");
 		button.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				resetGrid();
-				randomize();
+				int n=0;
+				while(removeOne()){
+					n++;
+				}
+				System.out.println("Removed "+n+" cells");
+				// resetGrid();
+				// randomize();
 				readFromGrid();
-				System.out.println(SudokuBoard.this.toString());
+				// solve();
 			}
 		});
 		add(button);
 	}
 
 	public static class BoardPart extends JPanel {
-		
+
 		private static final long serialVersionUID = 1L;
 		public JTextField input[];
 
@@ -79,29 +93,32 @@ public class SudokuBoard extends JPanel {
 		}
 	}
 
-	public void solve() {
+	public int solve(int minSolutions) {
+		if(minSolutions == -1)
+			minSolutions = Integer.MAX_VALUE;
 		GUESSES = 0;
-		readFromTextFeilds();
-		System.out.println(toString());
-		solve(0, 0);
-		readFromGrid();
-		System.out.println(toString()+ "Steps Used: "+GUESSES);
+		System.out.println("Searching for solution\n" + toString());
+		return solve(0, 0, minSolutions);
 		
+
 	}
 
-	private void readFromGrid() {
+	public void readFromGrid() {
 		for (int row = 0; row < 9; row++) {
 			for (int col = 0; col < 9; col++) {
+				if(grid == null){
+					System.out.println("Null?");
+				}
 				int spot = grid[col][row];
-				String setThis = spot+"";
-				if(spot == 0){
+				String setThis = spot + "";
+				if (spot == 0) {
 					setThis = "";
 				}
-				
-				int partX = col/3;
-				int partY = row/3;
-				int smallX = col%3;
-				int smallY = row%3;
+
+				int partX = col / 3;
+				int partY = row / 3;
+				int smallX = col % 3;
+				int smallY = row % 3;
 				input[partX + 3 * partY].input[smallX + 3 * smallY].setText(setThis);
 			}
 		}
@@ -122,59 +139,89 @@ public class SudokuBoard extends JPanel {
 				} catch (Exception e) {
 
 				}
-				//System.out.println("Value:" + spot + " Read @ " + (ix + jx) + " " + (iy + jy));
+				// System.out.println("Value:" + spot + " Read @ " + (ix + jx) +
+				// " " + (iy + jy));
 				grid[ix + jx][iy + jy] = spot;
 			}
 		}
 	}
 
-	private boolean solve(int i, int j) {
+	private boolean removeOne() {
+		int n = 20, row, col, spot;
+		while (n > 0) {
+			row = (int) (Math.random() * 9);
+			col = (int) (Math.random() * 9);
+			spot = grid[row][col];
+			if (spot != 0) {
+				grid[row][col] = 0;
+				if (solve(2) == 1) {
+					return true;
+				} else {
+					grid[row][col] = spot;
+					n--;
+				}
+			}
+			n--;
+		}
+		System.out.println("Falied??");
+		return false;
+	}
+
+	private int solve(int i, int j, int minSolutions) {
 		GUESSES++;
-		if (GUESSES % 1 == 0) {
-			// System.out.println(toString());
+		if (GUESSES % 10000000 == 0) {
+			System.out.println(toString() + "Solution taking a while, might be impossible!");
+			return 1;
 		}
 
 		if (j == 9) {
 			j = 0;
 			i++;
-			if (i == 9)
-				return true;
+			if (i == 9) {
+				// readFromGrid();
+				// System.out.println(toString());
+				gridCopy();
+				return 1;
+			}
 		}
 
 		if (grid[i][j] != 0) {
-			return solve(i, j + 1);
+			return solve(i, j + 1, minSolutions);
 		}
 		int guess = 1;
+		int re = 0;
 		while (guess < 10) {
 			grid[i][j] = guess;
 			if (checkCell(i, j)) {
-				if (solve(i, j + 1)) {
-					return true;
+				re += solve(i, j + 1, minSolutions);
+				if (re >= minSolutions){
+					grid[i][j] = 0;
+					return re;
 				}
 			}
 			guess++;
 		}
 		grid[i][j] = 0;
-		return false;
+		return re;
 	}
-	
-	public void randomize(){
+
+	public void randomize() {
 		int row = 0, col = 0, value = 0;
-		for(int n=0; n<30; n+=2){
-			row = (int)(Math.random()*9);
-			col = (int)(Math.random()*9);
-			value = (int)(Math.random()*9)+1;
-			if(grid[col][row] != 0){
+		for (int n = 0; n < 30; n += 2) {
+			row = (int) (Math.random() * 9);
+			col = (int) (Math.random() * 9);
+			value = (int) (Math.random() * 9) + 1;
+			if (grid[col][row] != 0) {
 				continue;
 			}
 			grid[col][row] = value;
-			if(!checkCell(col, row)){
+			if (!checkCell(col, row)) {
 				n--;
-				grid[col][row]=0;
+				grid[col][row] = 0;
 			}
 		}
 	}
-	
+
 	private void resetGrid() {
 		grid = new int[WIDTH][HEIGHT];
 		readFromGrid();
@@ -261,5 +308,15 @@ public class SudokuBoard extends JPanel {
 		}
 		re += "+-----------------------+\n";
 		return re;
+	}
+
+	public int[][] gridCopy() {
+		copy = new int[WIDTH][HEIGHT];
+		for (int row = 0; row < 9; row++) {
+			for (int col = 0; col < 9; col++) {
+				copy[row][col] = grid[row][col];
+			}
+		}
+		return copy;
 	}
 }

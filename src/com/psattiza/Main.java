@@ -6,7 +6,9 @@ public class Main {
 
 	public static void main(String[] args) {
 
-		SudokuBoard board = new SudokuBoard();    
+		SudokuBoard board = new SudokuBoard();
+		setG(board);
+		board.readFromGrid();
         JFrame frame = new JFrame("Sudoku");
         frame.add(board);
         frame.pack();
