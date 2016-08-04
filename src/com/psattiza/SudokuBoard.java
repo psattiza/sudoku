@@ -99,8 +99,6 @@ public class SudokuBoard extends JPanel {
 		GUESSES = 0;
 		System.out.println("Searching for solution\n" + toString());
 		return solve(0, 0, minSolutions);
-		
-
 	}
 
 	public void readFromGrid() {
